@@ -129,7 +129,11 @@ func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (Fin
 			if filter.Status != "" && finding.Status != filter.Status {
 				continue
 			}
-			item := FindingResult{Finding: finding, Entry: findingEntryOrPanic(entryByID, finding)}
+			entry, err := findingEntry(entryByID, finding)
+			if err != nil {
+				return err
+			}
+			item := FindingResult{Finding: finding, Entry: entry}
 			report.Items = append(report.Items, item)
 		}
 		report.Total = len(report.Items)
@@ -145,12 +149,15 @@ func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (Fin
 	return report, err
 }
 
-func findingEntryOrPanic(entries map[string]*domain.TermEntry, finding domain.RehearsalFinding) *domain.TermEntry {
+func findingEntry(entries map[string]*domain.TermEntry, finding domain.RehearsalFinding) (*domain.TermEntry, error) {
 	entry, ok := entries[finding.EntryID]
 	if !ok || entry == nil {
-		panic("演练发现引用的词条已失效")
+		return nil, domain.NewDetailedRuleError("data_integrity", "演练发现引用的词条已失效，无法生成报告", map[string]string{
+			"findingID": finding.ID,
+			"entryID":   finding.EntryID,
+		})
 	}
-	return entry
+	return entry, nil
 }
 
 func (s *Service) CloseFindings(ctx context.Context, cmd CloseFindings) (PackView, error) {
