@@ -14,9 +14,6 @@ import (
 type Service struct {
 	store Store
 	now   func() time.Time
-	// Reused by FindingsReport to avoid allocating for each filtered query.
-	reportItems   []FindingResult
-	reportHistory []domain.TermEntry
 }
 
 func NewService(store Store) *Service {

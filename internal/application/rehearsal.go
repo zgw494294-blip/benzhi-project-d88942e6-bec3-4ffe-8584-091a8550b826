@@ -99,10 +99,9 @@ func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (Fin
 		if err != nil {
 			return err
 		}
-		s.reportHistory = append(s.reportHistory[:0], history...)
-		entryByID := make(map[string]*domain.TermEntry, len(s.reportHistory))
-		for i := range s.reportHistory {
-			entryByID[s.reportHistory[i].ID] = &s.reportHistory[i]
+		entryByID := make(map[string]*domain.TermEntry, len(history))
+		for i := range history {
+			entryByID[history[i].ID] = &history[i]
 		}
 		if filter.FrozenRevision < 0 {
 			return domain.ErrNotFound
@@ -119,8 +118,7 @@ func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (Fin
 				return domain.ErrNotFound
 			}
 		}
-		s.reportItems = s.reportItems[:0]
-		report = FindingReport{TermPackID: pack.ID, FrozenRevision: filter.FrozenRevision}
+		report = FindingReport{TermPackID: pack.ID, FrozenRevision: filter.FrozenRevision, Items: []FindingResult{}}
 		for _, finding := range findings {
 			if filter.FrozenRevision > 0 && finding.FrozenRevision != filter.FrozenRevision {
 				continue
@@ -132,9 +130,8 @@ func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (Fin
 				continue
 			}
 			item := FindingResult{Finding: finding, Entry: entryByID[finding.EntryID]}
-			s.reportItems = append(s.reportItems, item)
+			report.Items = append(report.Items, item)
 		}
-		report.Items = s.reportItems
 		report.Total = len(report.Items)
 		for _, item := range report.Items {
 			if item.Finding.Status == domain.FindingOpen {
