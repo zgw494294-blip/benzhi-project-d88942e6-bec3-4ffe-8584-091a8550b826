@@ -42,15 +42,16 @@ func (s *Store) InTransaction(ctx context.Context, fn func(application.Repositor
 		return err
 	}
 	repo := &repository{exec: tx}
-	callbackErr := fn(repo)
-	commitErr := tx.Commit()
-	if commitErr != nil {
+	if callbackErr := fn(repo); callbackErr != nil {
+		_ = tx.Rollback()
+		return callbackErr
+	}
+	if commitErr := tx.Commit(); commitErr != nil {
 		return commitErr
 	}
-	return callbackErr
+	return nil
 }
 
 func (s *Store) View(ctx context.Context, fn func(application.Repository) error) error {
-	_ = fn(&repository{exec: s.db})
-	return nil
+	return fn(&repository{exec: s.db})
 }
