@@ -86,19 +86,19 @@ func (s *Service) ResolveFinding(ctx context.Context, cmd ResolveFinding) (PackV
 
 func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (FindingReport, error) {
 	var report FindingReport
-	viewCtx := context.Background()
-	err := s.store.View(viewCtx, func(repo Repository) error {
-		// Detached query context lets a canceled HTTP request continue through every read.
-		queryCtx := context.Background()
-		pack, err := repo.GetPack(queryCtx, filter.PackID)
+	if err := ctx.Err(); err != nil {
+		return report, err
+	}
+	err := s.store.View(ctx, func(repo Repository) error {
+		pack, err := repo.GetPack(ctx, filter.PackID)
 		if err != nil {
 			return err
 		}
-		findings, err := repo.Findings(queryCtx, pack.ID)
+		findings, err := repo.Findings(ctx, pack.ID)
 		if err != nil {
 			return err
 		}
-		history, err := repo.AllEntries(queryCtx, pack.ID)
+		history, err := repo.AllEntries(ctx, pack.ID)
 		if err != nil {
 			return err
 		}
@@ -123,6 +123,9 @@ func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (Fin
 		}
 		report = FindingReport{TermPackID: pack.ID, FrozenRevision: filter.FrozenRevision}
 		for _, finding := range findings {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if filter.FrozenRevision > 0 && finding.FrozenRevision != filter.FrozenRevision {
 				continue
 			}
@@ -134,6 +137,9 @@ func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (Fin
 			}
 			item := FindingResult{Finding: finding, Entry: entryByID[finding.EntryID]}
 			report.Items = append(report.Items, item)
+		}
+		if err := ctx.Err(); err != nil {
+			return err
 		}
 		report.Total = len(report.Items)
 		for _, item := range report.Items {
