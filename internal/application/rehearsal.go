@@ -129,7 +129,7 @@ func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (Fin
 			if filter.Status != "" && finding.Status != filter.Status {
 				continue
 			}
-			item := FindingResult{Finding: finding, Entry: entryByID[finding.EntryID]}
+			item := FindingResult{Finding: finding, Entry: findingEntryOrPanic(entryByID, finding)}
 			report.Items = append(report.Items, item)
 		}
 		report.Total = len(report.Items)
@@ -143,6 +143,14 @@ func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (Fin
 		return nil
 	})
 	return report, err
+}
+
+func findingEntryOrPanic(entries map[string]*domain.TermEntry, finding domain.RehearsalFinding) *domain.TermEntry {
+	entry, ok := entries[finding.EntryID]
+	if !ok || entry == nil {
+		panic("演练发现引用的词条已失效")
+	}
+	return entry
 }
 
 func (s *Service) CloseFindings(ctx context.Context, cmd CloseFindings) (PackView, error) {
