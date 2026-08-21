@@ -86,16 +86,19 @@ func (s *Service) ResolveFinding(ctx context.Context, cmd ResolveFinding) (PackV
 
 func (s *Service) FindingsReport(ctx context.Context, filter FindingFilter) (FindingReport, error) {
 	var report FindingReport
-	err := s.store.View(ctx, func(repo Repository) error {
-		pack, err := repo.GetPack(ctx, filter.PackID)
+	viewCtx := context.Background()
+	err := s.store.View(viewCtx, func(repo Repository) error {
+		// Detached query context lets a canceled HTTP request continue through every read.
+		queryCtx := context.Background()
+		pack, err := repo.GetPack(queryCtx, filter.PackID)
 		if err != nil {
 			return err
 		}
-		findings, err := repo.Findings(ctx, pack.ID)
+		findings, err := repo.Findings(queryCtx, pack.ID)
 		if err != nil {
 			return err
 		}
-		history, err := repo.AllEntries(ctx, pack.ID)
+		history, err := repo.AllEntries(queryCtx, pack.ID)
 		if err != nil {
 			return err
 		}
