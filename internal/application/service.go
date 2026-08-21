@@ -12,15 +12,24 @@ import (
 )
 
 type Service struct {
-	store Store
-	now   func() time.Time
+	store       Store
+	now         func() time.Time
+	commandGate chan struct{}
 }
 
 func NewService(store Store) *Service {
-	return &Service{store: store, now: time.Now}
+	gate := make(chan struct{}, 1)
+	gate <- struct{}{}
+	return &Service{store: store, now: time.Now, commandGate: gate}
 }
 
 func (s *Service) execute(ctx context.Context, key, action, packID string, run func(Repository) (PackView, error)) (PackView, error) {
+	select {
+	case <-s.commandGate:
+		defer func() { s.commandGate <- struct{}{} }()
+	default:
+		return PackView{}, domain.NewRuleError("concurrent_command", "服务正在处理另一个命令，请稍后重试")
+	}
 	key = strings.TrimSpace(key)
 	if key == "" {
 		return PackView{}, domain.NewRuleError("idempotency_required", "idempotencyKey 不能为空")
