@@ -6,7 +6,12 @@ import (
 	"termpack/internal/application"
 )
 
-type API struct{ service *application.Service }
+type API struct {
+	service             *application.Service
+	batchEntriesRequest batchEntriesRequest
+	batchReviewRequest  batchReviewRequest
+	batchResolveRequest batchResolveRequest
+}
 
 func New(service *application.Service) *API { return &API{service: service} }
 

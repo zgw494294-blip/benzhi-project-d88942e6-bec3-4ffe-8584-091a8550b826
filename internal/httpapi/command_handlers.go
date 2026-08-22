@@ -33,10 +33,10 @@ func (a *API) AddEntryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) BatchAddEntriesHandler(w http.ResponseWriter, r *http.Request) {
-	var request batchEntriesRequest
-	if !decodeJSON(w, r, &request) {
+	if !decodeJSON(w, r, &a.batchEntriesRequest) {
 		return
 	}
+	request := a.batchEntriesRequest
 	view, err := a.service.AddEntries(r.Context(), application.BatchAddEntries{PackID: r.PathValue("id"), Entries: request.Entries, ExpectedVersion: request.ExpectedVersion, IdempotencyKey: request.IdempotencyKey})
 	if err != nil {
 		writeError(w, err)

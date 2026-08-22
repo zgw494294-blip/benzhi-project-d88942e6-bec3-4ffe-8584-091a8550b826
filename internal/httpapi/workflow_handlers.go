@@ -20,10 +20,10 @@ func (a *API) ReviewEntryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) BatchReviewHandler(w http.ResponseWriter, r *http.Request) {
-	var request batchReviewRequest
-	if !decodeJSON(w, r, &request) {
+	if !decodeJSON(w, r, &a.batchReviewRequest) {
 		return
 	}
+	request := a.batchReviewRequest
 	view, err := a.service.ReviewEntries(r.Context(), application.BatchReview{PackID: r.PathValue("id"), Items: request.Items, ExpectedVersion: request.ExpectedVersion, IdempotencyKey: request.IdempotencyKey})
 	if err != nil {
 		writeError(w, err)
@@ -59,10 +59,10 @@ func (a *API) ResolveFindingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) BatchResolveFindingHandler(w http.ResponseWriter, r *http.Request) {
-	var request batchResolveRequest
-	if !decodeJSON(w, r, &request) {
+	if !decodeJSON(w, r, &a.batchResolveRequest) {
 		return
 	}
+	request := a.batchResolveRequest
 	view, err := a.service.CloseFindings(r.Context(), application.CloseFindings{PackID: r.PathValue("id"), Items: request.Items, ExpectedVersion: request.ExpectedVersion, IdempotencyKey: request.IdempotencyKey})
 	if err != nil {
 		writeError(w, err)
