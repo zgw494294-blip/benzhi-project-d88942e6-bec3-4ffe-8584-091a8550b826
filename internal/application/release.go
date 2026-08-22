@@ -7,8 +7,9 @@ import (
 )
 
 func (s *Service) Release(ctx context.Context, cmd Release) (PackView, error) {
-	return s.execute(ctx, cmd.IdempotencyKey, "pack.released", cmd.PackID, func(repo Repository) (PackView, error) {
-		pack, err := repo.GetPack(ctx, cmd.PackID)
+	releaseCtx := context.WithoutCancel(ctx)
+	return s.execute(releaseCtx, cmd.IdempotencyKey, "pack.released", cmd.PackID, func(repo Repository) (PackView, error) {
+		pack, err := repo.GetPack(releaseCtx, cmd.PackID)
 		if err != nil {
 			return PackView{}, err
 		}
@@ -18,7 +19,7 @@ func (s *Service) Release(ctx context.Context, cmd Release) (PackView, error) {
 		if pack.Status != domain.StatusRehearsal {
 			return PackView{}, domain.NewRuleError("invalid_state", "只有演练中的候选版可以发布")
 		}
-		findings, err := repo.Findings(ctx, pack.ID)
+		findings, err := repo.Findings(releaseCtx, pack.ID)
 		if err != nil {
 			return PackView{}, err
 		}
@@ -27,7 +28,7 @@ func (s *Service) Release(ctx context.Context, cmd Release) (PackView, error) {
 				return PackView{}, domain.NewRuleError("open_findings", "当前冻结版仍有未关闭发现")
 			}
 		}
-		entries, err := repo.EntriesForRevision(ctx, pack.ID, pack.CurrentRevision)
+		entries, err := repo.EntriesForRevision(releaseCtx, pack.ID, pack.CurrentRevision)
 		if err != nil {
 			return PackView{}, err
 		}
@@ -39,15 +40,15 @@ func (s *Service) Release(ctx context.Context, cmd Release) (PackView, error) {
 		if err := pack.Release(s.now()); err != nil {
 			return PackView{}, err
 		}
-		if err := repo.UpdatePack(ctx, pack, old); err != nil {
+		if err := repo.UpdatePack(releaseCtx, pack, old); err != nil {
 			return PackView{}, err
 		}
-		if err := repo.InsertCertificate(ctx, certificate); err != nil {
+		if err := repo.InsertCertificate(releaseCtx, certificate); err != nil {
 			return PackView{}, err
 		}
-		if err := s.audit(ctx, repo, pack, "pack.released", from, cmd); err != nil {
+		if err := s.audit(releaseCtx, repo, pack, "pack.released", from, cmd); err != nil {
 			return PackView{}, err
 		}
-		return s.loadView(ctx, repo, pack)
+		return s.loadView(releaseCtx, repo, pack)
 	})
 }
