@@ -12,7 +12,20 @@ import (
 	"termpack/internal/domain"
 )
 
+type preflightCacheKey struct {
+	packID   string
+	revision int
+}
+
 func (s *Service) Preflight(ctx context.Context, packID string, revision int) (PreflightReport, error) {
+	key := preflightCacheKey{packID: packID, revision: revision}
+	s.preflightMu.RLock()
+	cached, ok := s.preflightReports[key]
+	s.preflightMu.RUnlock()
+	if ok {
+		return clonePreflightReport(cached), nil
+	}
+
 	var report PreflightReport
 	err := s.store.View(ctx, func(repo Repository) error {
 		pack, err := repo.GetPack(ctx, packID)
@@ -60,7 +73,17 @@ func (s *Service) Preflight(ctx context.Context, packID string, revision int) (P
 		report.CanCompleteReview = pack.Status == domain.StatusSubmitted && report.Total > 0 && report.Pending == 0 && report.Rejected == 0 && len(report.Problems) == 0
 		return nil
 	})
+	if err == nil {
+		s.preflightMu.Lock()
+		s.preflightReports[key] = clonePreflightReport(report)
+		s.preflightMu.Unlock()
+	}
 	return report, err
+}
+
+func clonePreflightReport(report PreflightReport) PreflightReport {
+	report.Problems = append([]PreflightProblem(nil), report.Problems...)
+	return report
 }
 
 func (s *Service) RevisionDiff(ctx context.Context, packID string, currentRevision, previousRevision int) (RevisionDiff, error) {

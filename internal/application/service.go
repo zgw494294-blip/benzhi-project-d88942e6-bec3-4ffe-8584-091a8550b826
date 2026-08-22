@@ -6,18 +6,25 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"strings"
+	"sync"
 	"time"
 
 	"termpack/internal/domain"
 )
 
 type Service struct {
-	store Store
-	now   func() time.Time
+	store            Store
+	now              func() time.Time
+	preflightMu      sync.RWMutex
+	preflightReports map[preflightCacheKey]PreflightReport
 }
 
 func NewService(store Store) *Service {
-	return &Service{store: store, now: time.Now}
+	return &Service{
+		store:            store,
+		now:              time.Now,
+		preflightReports: make(map[preflightCacheKey]PreflightReport),
+	}
 }
 
 func (s *Service) execute(ctx context.Context, key, action, packID string, run func(Repository) (PackView, error)) (PackView, error) {
