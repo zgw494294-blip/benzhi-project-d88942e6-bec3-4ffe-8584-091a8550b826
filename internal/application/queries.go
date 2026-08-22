@@ -152,6 +152,9 @@ type certificateSnapshot struct {
 }
 
 func (s *Service) VerifyCertificate(ctx context.Context, packID string) (CertificateVerification, error) {
+	if cached, ok := s.cachedCertificateVerification(packID); ok {
+		return cached, nil
+	}
 	var result CertificateVerification
 	err := s.store.View(ctx, func(repo Repository) error {
 		pack, err := repo.GetPack(ctx, packID)
@@ -219,6 +222,9 @@ func (s *Service) VerifyCertificate(ctx context.Context, packID string) (Certifi
 		}
 		return nil
 	})
+	if err == nil {
+		s.cacheCertificateVerification(packID, result)
+	}
 	return result, err
 }
 

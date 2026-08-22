@@ -6,18 +6,36 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"strings"
+	"sync"
 	"time"
 
 	"termpack/internal/domain"
 )
 
 type Service struct {
-	store Store
-	now   func() time.Time
+	store               Store
+	now                 func() time.Time
+	certificateCacheMu  sync.RWMutex
+	certificateVerifies map[string]CertificateVerification
 }
 
 func NewService(store Store) *Service {
-	return &Service{store: store, now: time.Now}
+	return &Service{store: store, now: time.Now, certificateVerifies: make(map[string]CertificateVerification)}
+}
+
+func (s *Service) cachedCertificateVerification(packID string) (CertificateVerification, bool) {
+	s.certificateCacheMu.RLock()
+	defer s.certificateCacheMu.RUnlock()
+	result, ok := s.certificateVerifies[packID]
+	result.Checks = append([]CertificateCheck(nil), result.Checks...)
+	return result, ok
+}
+
+func (s *Service) cacheCertificateVerification(packID string, result CertificateVerification) {
+	result.Checks = append([]CertificateCheck(nil), result.Checks...)
+	s.certificateCacheMu.Lock()
+	defer s.certificateCacheMu.Unlock()
+	s.certificateVerifies[packID] = result
 }
 
 func (s *Service) execute(ctx context.Context, key, action, packID string, run func(Repository) (PackView, error)) (PackView, error) {
