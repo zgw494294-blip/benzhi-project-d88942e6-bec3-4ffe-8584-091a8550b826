@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>口译术语包发布工作台</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="口译术语包发布工作台首页">
+      <span class="brand-mark">TP</span>
+      <span><strong>术语发布台</strong><small>INTERPRETATION DESK</small></span>
+    </a>
+    <div class="topbar-meta">
+      <span id="health-dot" class="health-dot" aria-hidden="true"></span>
+      <span id="health-text">正在连接</span>
+      <button class="icon-button" id="refresh-button" type="button" title="刷新当前术语包" aria-label="刷新当前术语包">↻</button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-heading">
+        <div><span class="eyebrow">PACKS</span><h1>术语包</h1></div>
+        <button class="primary compact" id="new-pack-button" type="button">新建</button>
+      </div>
+      <div id="pack-list" class="pack-list" aria-live="polite"></div>
+    </aside>
+
+    <main id="workspace" class="workspace">
+      <section id="empty-state" class="empty-state">
+        <span class="empty-index">00</span>
+        <h2>选择一份术语包</h2>
+        <p>当前没有打开的会议术语流程。</p>
+        <button class="primary" id="empty-new-button" type="button">创建术语包</button>
+      </section>
+
+      <div id="pack-view" class="pack-view hidden">
+        <section class="pack-header">
+          <div class="pack-title-group">
+            <span id="pack-kicker" class="eyebrow"></span>
+            <h2 id="conference-name"></h2>
+            <div class="language-pair"><span id="source-language"></span><b>→</b><span id="target-language"></span></div>
+          </div>
+          <div class="pack-facts">
+            <div><span>状态</span><strong id="status-badge" class="status"></strong></div>
+            <div><span>当前修订</span><strong id="revision-value"></strong></div>
+            <div><span>并发版本</span><strong id="version-value"></strong></div>
+          </div>
+        </section>
+
+        <nav id="stage-track" class="stage-track" aria-label="发布流程">
+          <div data-stage="Draft"><i>01</i><span>编制</span></div>
+          <div data-stage="Submitted"><i>02</i><span>审定</span></div>
+          <div data-stage="Frozen"><i>03</i><span>冻结</span></div>
+          <div data-stage="Rehearsal"><i>04</i><span>演练</span></div>
+          <div data-stage="Released"><i>05</i><span>发布</span></div>
+        </nav>
+
+        <section class="action-strip">
+          <div><span class="eyebrow">NEXT ACTION</span><h3 id="action-title"></h3><p id="action-copy"></p></div>
+          <div id="action-buttons" class="action-buttons"></div>
+        </section>
+
+        <div class="content-tabs" role="tablist" aria-label="术语包内容">
+          <button class="tab active" data-tab="entries" role="tab" type="button">当前术语 <span id="entry-count">0</span></button>
+          <button class="tab" data-tab="findings" role="tab" type="button">演练发现 <span id="finding-count">0</span></button>
+          <button class="tab" data-tab="history" role="tab" type="button">修订记录</button>
+          <button class="tab" data-tab="certificate" role="tab" type="button">发布凭据</button>
+        </div>
+
+        <section id="entries-panel" class="panel tab-panel">
+          <div class="panel-heading"><div><span class="eyebrow">CURRENT REVISION</span><h3>双语术语表</h3></div><div class="panel-tools"><button id="preflight-button" class="ghost compact" type="button">预检报告</button><button id="batch-entry-button" class="secondary compact" type="button">批量编制</button><button id="add-entry-button" class="secondary" type="button">添加词条</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>源术语 / 首选译法</th><th>定义与语境</th><th>来源依据</th><th>审定</th><th></th></tr></thead><tbody id="entry-table"></tbody></table></div>
+          <div id="entry-empty" class="inline-empty">当前修订还没有词条</div>
+        </section>
+
+        <section id="findings-panel" class="panel tab-panel hidden">
+          <div class="panel-heading"><div><span class="eyebrow">REHEARSAL LOG</span><h3>演练发现 <small id="finding-summary"></small></h3></div><div class="panel-tools"><select id="finding-severity-filter" aria-label="按严重程度筛选"><option value="">全部严重程度</option><option value="Minor">轻微</option><option value="Major">重大</option><option value="Critical">严重</option></select><select id="finding-status-filter" aria-label="按状态筛选"><option value="">全部状态</option><option value="Open">未关闭</option><option value="Resolved">已关闭</option></select><button id="batch-resolve-button" class="ghost compact" type="button">批量关闭</button><button id="add-finding-button" class="secondary" type="button">登记发现</button></div></div>
+          <div id="finding-list" class="finding-list"></div>
+          <div id="finding-empty" class="inline-empty">尚未登记演练发现</div>
+        </section>
+
+        <section id="history-panel" class="panel tab-panel hidden">
+          <div class="panel-heading"><div><span class="eyebrow">REVISION ARCHIVE</span><h3>词条修订记录</h3></div></div>
+          <div id="history-list" class="history-list"></div>
+        </section>
+
+        <section id="certificate-panel" class="panel tab-panel hidden">
+          <div class="panel-heading"><div><span class="eyebrow">IMMUTABLE RECORD</span><h3>发布凭据</h3></div><button id="verify-certificate-button" class="ghost compact" type="button">核验完整性</button></div>
+          <div id="certificate-empty" class="inline-empty">发布完成后生成不可变凭据</div>
+          <div id="certificate-view" class="certificate hidden"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="loading" class="loading hidden" aria-live="assertive"><span></span><b>正在提交</b></div>
+
+  <dialog id="pack-dialog"><form id="pack-form" method="dialog"><header><span class="eyebrow">NEW PACK</span><h2>建立会议术语包</h2></header><label>会议主题<input name="conferenceName" required maxlength="160"></label><div class="form-grid"><label>源语言<input name="sourceLanguage" required placeholder="例如：中文"></label><label>目标语言<input name="targetLanguage" required placeholder="例如：英语"></label></div><footer><button value="cancel" class="ghost">取消</button><button value="default" class="primary">创建</button></footer></form></dialog>
+  <dialog id="entry-dialog"><form id="entry-form" method="dialog"><header><span class="eyebrow">TERM ENTRY</span><h2 id="entry-dialog-title">编制双语词条</h2></header><input type="hidden" name="entryID"><div class="form-grid"><label>源术语<input name="sourceTerm" required></label><label>首选译法<input name="preferredTranslation" required></label></div><label>定义<textarea name="definition" required rows="2"></textarea></label><label>会议语境<textarea name="context" required rows="2"></textarea></label><label>来源依据<textarea name="evidence" required rows="2"></textarea></label><footer><button value="cancel" class="ghost">取消</button><button id="entry-submit" value="default" class="primary">加入当前修订</button></footer></form></dialog>
+  <dialog id="metadata-dialog"><form id="metadata-form" method="dialog"><header><span class="eyebrow">PACK METADATA</span><h2>修订术语包信息</h2></header><label>会议主题<input name="conferenceName" required></label><div class="form-grid"><label>源语言<input name="sourceLanguage" required></label><label>目标语言<input name="targetLanguage" required></label></div><footer><button value="cancel" class="ghost">取消</button><button value="default" class="primary">保存信息</button></footer></form></dialog>
+  <dialog id="batch-entry-dialog"><form id="batch-entry-form" method="dialog"><header><span class="eyebrow">BATCH AUTHORING</span><h2>批量编制词条</h2></header><label>词条 JSON<textarea name="entries" required rows="10" placeholder='[{"sourceTerm":"…","preferredTranslation":"…","definition":"…","context":"…","evidence":"…"}]'></textarea></label><footer><button value="cancel" class="ghost">取消</button><button value="default" class="primary">提交批量词条</button></footer></form></dialog>
+  <dialog id="batch-review-dialog"><form id="batch-review-form" method="dialog"><header><span class="eyebrow">BATCH REVIEW</span><h2>批量审定 Pending 词条</h2></header><label>审定 JSON<textarea name="items" required rows="9" placeholder='[{"entryID":"…","decision":"Accepted","translation":"","editorNote":""}]'></textarea></label><footer><button value="cancel" class="ghost">取消</button><button value="default" class="primary">提交批量审定</button></footer></form></dialog>
+  <dialog id="batch-resolve-dialog"><form id="batch-resolve-form" method="dialog"><header><span class="eyebrow">BATCH RESOLUTION</span><h2>批量关闭演练发现</h2></header><label>处理 JSON<textarea name="items" required rows="9" placeholder='[{"findingID":"…","resolution":"…"}]'></textarea></label><footer><button value="cancel" class="ghost">取消</button><button value="default" class="primary">提交批量处理</button></footer></form></dialog>
+  <dialog id="review-dialog"><form id="review-form" method="dialog"><header><span class="eyebrow">EDITOR REVIEW</span><h2>审定词条</h2><p id="review-term"></p></header><input type="hidden" name="entryID"><label>审定结论<select name="decision"><option value="Accepted">接受</option><option value="Replaced">替换</option><option value="Rejected">驳回</option></select></label><label>替换译法<input name="translation"></label><label>编辑说明<textarea name="editorNote" rows="3"></textarea></label><footer><button value="cancel" class="ghost">取消</button><button value="default" class="primary">记录审定</button></footer></form></dialog>
+  <dialog id="finding-dialog"><form id="finding-form" method="dialog"><header><span class="eyebrow">REHEARSAL FINDING</span><h2>登记演练发现</h2></header><label>关联词条<select name="entryID" required></select></label><div class="form-grid"><label>演练场景<input name="scenario" required></label><label>严重程度<select name="severity"><option value="Minor">轻微</option><option value="Major">重大</option><option value="Critical">严重</option></select></label></div><label>观察记录<textarea name="observation" required rows="4"></textarea></label><footer><button value="cancel" class="ghost">取消</button><button value="default" class="primary">登记</button></footer></form></dialog>
+  <dialog id="resolve-dialog"><form id="resolve-form" method="dialog"><header><span class="eyebrow">CLOSE FINDING</span><h2>关闭演练发现</h2></header><input type="hidden" name="findingID"><label>处理记录<textarea name="resolution" required rows="4"></textarea></label><footer><button value="cancel" class="ghost">取消</button><button value="default" class="primary">确认关闭</button></footer></form></dialog>
+  <dialog id="release-dialog"><form id="release-form" method="dialog"><header><span class="eyebrow">FINAL APPROVAL</span><h2>批准当前冻结版</h2></header><label>发布负责人<input name="approvedBy" required></label><footer><button value="cancel" class="ghost">取消</button><button value="default" class="danger">生成发布凭据</button></footer></form></dialog>
+</body>
+</html>
